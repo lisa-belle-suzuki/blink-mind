@@ -28,3 +28,7 @@ yarn install
 yarn storybook
 ```
 then open http://localhost:6007/ 
+
+
+### 未踏用の実装の記録
+mybranchというbranchを作った

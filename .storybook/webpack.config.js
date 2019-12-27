@@ -27,8 +27,8 @@ module.exports = {
       {
         enforce: 'pre',
         test: /\.js$/,
-        loader: 'source-map-loader'
-        // exclude: [/node_modules\//]
+        loader: 'source-map-loader',
+        exclude: [/node_modules\//]
       },
       {
         test: /\.tsx?$/,
@@ -63,7 +63,7 @@ module.exports = {
   resolve: {
     alias: {
       '@blink-mind/core': path.join(__dirname, '../packages/core/src/index'),
-      '@blink-mind/icons': path.join(__dirname, '../packages/icons/index'),
+      '@blink-mind/icons': path.join(__dirname, '../packages/icons/'),
       '@blink-mind/renderer-react': path.join(
         __dirname,
         '../packages/renderer-react/src/index'
@@ -83,6 +83,10 @@ module.exports = {
       '@blink-mind/plugin-theme-selector': path.join(
         __dirname,
         '../packages/plugin-theme-selector/src/index'
+      ),
+      '@blink-mind/plugin-topology-diagram': path.join(
+        __dirname,
+        '../packages/plugin-topology-diagram/src/index'
       ),
       'styled-components': path.join(
         __dirname,

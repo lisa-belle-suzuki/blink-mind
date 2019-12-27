@@ -15,12 +15,14 @@ export interface IModifierArg {
   model: Model;
   topicKey?: KeyType;
   topic?: Topic;
+  blockType?: string;
   focusMode?: string;
   data?: any;
   desc?: any;
   style?: string;
   theme?: any;
   layoutDir?: any;
+  zoomFactor?: number;
 }
 
 export type IModifierResult = Model;

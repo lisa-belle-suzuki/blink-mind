@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { storiesOf } from '@storybook/react';
-import { BaseDemo } from '../common/base-demo';
+import { BaseDemo, ToolBar, ToolBarItem,Icon } from '../common';
 import { Diagram, iconClassName } from '@blink-mind/renderer-react';
 import { JsonSerializerPlugin } from '@blink-mind/plugin-json-serializer';
 import RichTextEditorPlugin from '@blink-mind/plugin-rich-text-editor';
 import { ThemeSelectorPlugin } from '@blink-mind/plugin-theme-selector';
-
+import TopologyDiagramPlugin from '@blink-mind/plugin-topology-diagram';
 import styled from 'styled-components';
 import { Dialog, MenuItem, Menu, MenuDivider } from '@blueprintjs/core';
 import { downloadFile } from '../utils';
@@ -13,28 +13,9 @@ import debug from 'debug';
 
 const log = debug('story:app');
 
-const ToolBar = styled.div`
-  width: calc(100% - 18px);
-  height: 36px;
-  background: white;
-`;
 
-const ToolBarItem = styled.div`
-  padding: 5px;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  display: inline-block;
-`;
 
-const Icon = styled.div`
-  width: 26px;
-  height: 26px;
-  font-size: 26px !important;
-  &:hover {
-    color: #106ba3;
-  }
-`;
+
 
 const Container = styled.div`
   width: 100%;
@@ -46,10 +27,17 @@ const DiagramContainer = styled.div`
   height: calc(100% - 36px);
 `;
 
+const ZoomSpan = styled.span`
+  height: 36px;
+  display: flex;
+  align-items: center;
+`;
+
 const plugins = [
   RichTextEditorPlugin(),
   JsonSerializerPlugin(),
-  ThemeSelectorPlugin()
+  ThemeSelectorPlugin(),
+  TopologyDiagramPlugin()
 ];
 class AppDemo extends BaseDemo {
   constructor(props) {
@@ -88,7 +76,7 @@ class AppDemo extends BaseDemo {
     const props = this.diagram.getDiagramProps();
     const { controller } = props;
     input.type = 'file';
-    input.accept = '.json';
+    input.accept = '.json,.blinkmind,.bm';
     log('add onchange');
     input.addEventListener('change', evt => {
       const file = evt.target.files[0];

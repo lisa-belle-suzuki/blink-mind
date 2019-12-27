@@ -1,8 +1,8 @@
-import { Controller, Model } from '@blink-mind/core';
+import { Controller, Model, Topic } from '@blink-mind/core';
 import * as React from 'react';
 import styled from 'styled-components';
 import { DragScrollWidget } from '../../../components/common';
-import { topicRefKey } from '../../../utils';
+import { EventKey, RefKey, topicRefKey } from '../../../utils';
 const NodeLayer = styled.div`
   position: relative;
   display: flex;
@@ -31,10 +31,15 @@ export class MindDragScrollWidget<
   }
 
   componentDidMount(): void {
-    const { getRef, model } = this.props;
+    const { getRef, model, controller } = this.props;
+    controller.run('addZoomFactorChangeEventListener', {
+      ...this.props,
+      listener: this.setZoomFactor
+    });
     const rootTopic: HTMLElement = getRef(
       topicRefKey(model.editorRootTopicKey)
     );
+    //TODO
     const nodeLayer: HTMLElement = getRef('node-layer');
     const rootTopicRect = rootTopic.getBoundingClientRect();
     const nodeLayerRect = nodeLayer.getBoundingClientRect();
@@ -45,22 +50,62 @@ export class MindDragScrollWidget<
         this.dragScrollWidget.viewBox.getBoundingClientRect().height / 2 +
         rootTopicRect.height
     );
+    this.layout();
+  }
+
+  componentWillUnmount(): void {
+    const { controller } = this.props;
+    controller.run('removeZoomFactorChangeEventListener', {
+      ...this.props,
+      listener: this.setZoomFactor
+    });
   }
 
   get dragScrollWidget(): DragScrollWidget {
-    return this.props.getRef('DragScrollWidget');
+    return this.props.getRef(RefKey.DRAG_SCROLL_WIDGET_KEY);
   }
 
-  onClick = e => {};
+  componentDidUpdate(): void {
+    const { controller } = this.props;
+    controller.run('fireEvent', {
+      ...this.props,
+      key: EventKey.CENTER_ROOT_TOPIC
+    });
+    this.layout();
+  }
+
+  layout() {
+    const { controller } = this.props;
+    controller.run('layout', this.props);
+  }
+
+  setZoomFactor = zoomFactor => {
+    this.dragScrollWidget.setZoomFactor(zoomFactor);
+  };
+
+  onWheel = e => {
+    if (e.altKey || e.ctrlKey) {
+      const { controller } = this.props;
+      let zoomFactor = controller.run('getZoomFactor', this.props);
+      zoomFactor = zoomFactor - (e.nativeEvent.deltaY > 0 ? 0.1 : -0.1);
+      if (zoomFactor < 0.5) zoomFactor = 0.5;
+      if (zoomFactor > 4) zoomFactor = 4;
+      // console.log('zoomFactor=>', zoomFactor);
+      controller.run('setZoomFactor', { ...this.props, zoomFactor });
+    }
+  };
 
   render() {
     const { saveRef, model, controller } = this.props;
     const nodeKey = model.editorRootTopicKey;
     return (
-      <DIV
-      // onClick={this.onClick}
-      >
-        <DragScrollWidget {...this.state} ref={saveRef('DragScrollWidget')}>
+      <DIV onWheel={this.onWheel}>
+        <DragScrollWidget
+          {...this.state}
+          enableMouseWheel={false}
+          zoomFactor={model.zoomFactor}
+          ref={saveRef(RefKey.DRAG_SCROLL_WIDGET_KEY)}
+        >
           {(
             setViewBoxScroll: (left: number, top: number) => void,
             setViewBoxScrollDelta: (left: number, top: number) => void

@@ -9,8 +9,17 @@ export function StylePlugin() {
   let colorIndex = 0;
   return {
     getTopicStyle(props): TopicStyle {
+      const { controller } = props;
+      return {
+        contentStyle: controller.run('getTopicContentStyle', props),
+        linkStyle: controller.run('getLinkStyle', props),
+        subLinkStyle: controller.run('getSubLinkStyle', props)
+      };
+    },
+
+    getTopicContentStyle(props): TopicStyle {
       const { topicKey, model, controller } = props;
-      log('getTopicStyle:', topicKey, model);
+      log('getTopicContentStyle:', topicKey, model);
       const visualLevel = model.getTopicVisualLevel(topicKey);
       const theme = model.config.theme;
       let themeStyle;
@@ -18,6 +27,8 @@ export function StylePlugin() {
       else if (visualLevel === TopicVisualLevel.PRIMARY)
         themeStyle = theme.primaryTopic;
       else themeStyle = theme.normalTopic;
+
+      themeStyle = { ...theme.contentStyle, ...themeStyle.contentStyle };
 
       if (theme.randomColor) {
         const randomColor = controller.run('getRandomColor', props);
@@ -39,15 +50,7 @@ export function StylePlugin() {
 
       return {
         ...themeStyle,
-        ...customStyle,
-        linkStyle: {
-          ...themeStyle.linkStyle,
-          ...customStyle.linkStyle
-        },
-        subLinkStyle: {
-          ...themeStyle.subLinkStyle,
-          ...customStyle.subLinkStyle
-        }
+        ...customStyle.contentStyle
       };
     },
 
@@ -145,14 +148,17 @@ export function StylePlugin() {
       return res;
     },
 
-    setStyle(props) {
+    setTopicContentStyle(props) {
       const { topicKey, controller, style, model } = props;
       const topic = model.getTopic(topicKey);
       const topicStyle = topic.style;
       const styleObj = topicStyle ? JSON.parse(topicStyle) : {};
       const newStyleObj = {
         ...styleObj,
-        ...style
+        contentStyle: {
+          ...styleObj.contentStyle,
+          ...style
+        }
       };
       if (!isEqual(styleObj, newStyleObj)) {
         const newStyleStr = JSON.stringify(newStyleObj);
@@ -229,11 +235,15 @@ export function StylePlugin() {
         '#DB995A',
         '#83BCFF',
         '#ED7B84',
-        '#F92A82',
-        '#83BCFF'
+        '#739E82',
+        '#D3BCC0',
+        '#FFA0FD',
+        '#EFD3D7',
+        '#C6878F'
       ];
       const color = colors[++colorIndex % colors.length];
       colorMap.set(topicKey, color);
+      log('getRandomColor', topicKey, color);
       return color;
     },
 

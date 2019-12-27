@@ -4,12 +4,19 @@ import { configure } from '@storybook/react';
 const debugNameSpaces = [
   // 'core:*',
   // 'node:*',
+  'node:topic-content-editor',
+
+  // 'node:drag-scroll-widget',
   'node:topic-content-widget',
   // 'node:topic-desc-editor',
   // 'node:style-editor',
   // 'plugin:StylePlugin',
   // 'plugin:*',
-  // 'modifier'
+  // 'plugin:event',
+  'plugin:operation',
+  // 'story:*',
+  'modifier'
+
 ];
 
 localStorage.debug = debugNameSpaces.join(',');

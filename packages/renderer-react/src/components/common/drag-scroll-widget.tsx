@@ -17,10 +17,14 @@ const DragScrollContent = styled.div`
   width: max-content;
 `;
 
+const useWindowListener = false;
+
 interface DragScrollWidgetProps {
   mouseKey?: 'left' | 'right';
   needKeyPressed?: boolean;
   canDragFunc?: () => Boolean;
+  enableMouseWheel: boolean;
+  zoomFactor: number;
   children: (
     setViewBoxScroll: (left: number, top: number) => void,
     setViewBoxScrollDelta: (left: number, top: number) => void
@@ -76,6 +80,19 @@ export class DragScrollWidget extends React.Component<
   viewBoxRef = ref => {
     if (ref) {
       this.viewBox = ref;
+      if (!this.props.enableMouseWheel) {
+        log('addEventListener onwheel');
+        this.viewBox.addEventListener(
+          'wheel',
+          function(e) {
+            log('onwheel');
+            (e.ctrlKey || e.altKey) && e.preventDefault();
+          },
+          {
+            passive: false
+          }
+        );
+      }
       this.setViewBoxScroll(
         this.viewBox.clientWidth,
         this.viewBox.clientHeight
@@ -136,18 +153,17 @@ export class DragScrollWidget extends React.Component<
       }
       this._lastCoordX = this.viewBox.scrollLeft + e.nativeEvent.clientX;
       this._lastCoordY = this.viewBox.scrollTop + e.nativeEvent.clientY;
-      window.addEventListener('mousemove', this.onMouseMove);
-      window.addEventListener('mouseup', this.onMouseUp);
-      // this.viewBox.addEventListener('mousemove', this.onMouseMove);
-      // this.viewBox.addEventListener('mouseup', this.onMouseUp);
+
+      const ele = useWindowListener ? window : this.viewBox;
+      ele.addEventListener('mousemove', this.onMouseMove);
+      ele.addEventListener('mouseup', this.onMouseUp);
     }
   };
 
   onMouseUp = e => {
-    window.removeEventListener('mousemove', this.onMouseMove);
-    window.removeEventListener('mouseup', this.onMouseUp);
-    // this.viewBox.removeEventListener('mousemove', this.onMouseMove);
-    // this.viewBox.removeEventListener('mouseup', this.onMouseUp);
+    const ele = useWindowListener ? window : this.viewBox;
+    ele.removeEventListener('mousemove', this.onMouseMove);
+    ele.removeEventListener('mouseup', this.onMouseUp);
   };
 
   // _lastCoordX和_lastCorrdY 是为了在拖动过程中 计算 viewBox的scrollLeft和scrollTop值用到
@@ -174,10 +190,21 @@ export class DragScrollWidget extends React.Component<
     document.removeEventListener('contextmenu', this.handleContextMenu);
   }
 
+  setZoomFactor(zoomFactor) {
+    this.bigView.style.transform = `scale(${zoomFactor})`;
+    this.bigView.style.transformOrigin = '50% 50%';
+  }
+
   render() {
+    const style = {
+      ...this.state.widgetStyle
+      // zoom:this.props.zoomFactor,
+      // transform: `scale(${this.props.zoomFactor})`,
+      // transformOrigin: '50% 50%'
+    };
     return (
       <DragScrollView ref={this.viewBoxRef} onMouseDown={this.onMouseDown}>
-        <div style={this.state.widgetStyle} ref={this.bigViewRef}>
+        <div style={style} ref={this.bigViewRef}>
           <DragScrollContent
             ref={this.contentRef}
             style={this.state.contentStyle}

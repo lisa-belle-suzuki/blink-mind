@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "blink-mind",
+  "name": "blink-mind-nyanko-lisa",
   "workspaces": [
     "packages/*"
   ],

@@ -3,7 +3,7 @@ import debug from 'debug';
 import * as React from 'react';
 import styled from 'styled-components';
 import { SaveRef } from '../../components/common';
-import { DIAGRAM_ROOT_KEY, linksRefKey } from '../../utils';
+import { linksRefKey, RefKey } from '../../utils';
 import { EditorRootBreadcrumbs } from './components/editor-root-breadcrumbs';
 import { MindDragScrollWidget } from './components/mind-drag-scroll-widget';
 import { Modals } from './components/modals';
@@ -18,7 +18,9 @@ import { TopicDesc } from './components/topic-desc';
 import { TopicHighlight } from './components/topic-highlight';
 import { TopicSubLinks } from './components/topic-sub-links';
 import { TopicWidget } from './components/topic-widget';
+import { ViewPortViewer } from './components/view-port-util';
 import { customizeTopicContextMenu } from './context-menus';
+import { renderDrawer } from './drawer';
 import Theme from './theme';
 const log = debug('plugin:rendering');
 
@@ -43,7 +45,7 @@ export function RenderingPlugin() {
             log('renderDiagram', model);
             return (
               <Theme theme={model.config.theme}>
-                <DiagramRoot ref={saveRef(DIAGRAM_ROOT_KEY)}>
+                <DiagramRoot ref={saveRef(RefKey.DIAGRAM_ROOT_KEY)}>
                   <MindDragScrollWidget {...widgetProps} />
                   {controller.run('renderDiagramCustomize', widgetProps)}
                 </DiagramRoot>
@@ -53,23 +55,20 @@ export function RenderingPlugin() {
         </SaveRef>
       );
     },
+    renderDrawer,
 
     renderDiagramCustomize(props) {
       const { controller, model } = props;
-      const breadcrumbs = controller.run('renderEditorRootBreadcrumbs', {
+      const nProps = {
         ...props,
         topicKey: model.focusKey
-      });
-
-      const styleEditor = controller.run('renderStyleEditor', {
-        ...props,
-        topicKey: model.focusKey
-      });
-      const modals = controller.run('renderModals', {
-        ...props,
-        topicKey: model.focusKey
-      });
-      return [breadcrumbs, styleEditor, modals];
+      };
+      const breadcrumbs = controller.run('renderEditorRootBreadcrumbs', nProps);
+      const styleEditor = controller.run('renderStyleEditor', nProps);
+      const modals = controller.run('renderModals', nProps);
+      const drawer = controller.run('renderDrawer', nProps);
+      const viewportViewer = controller.run('renderViewPortViewer', nProps);
+      return [breadcrumbs, styleEditor, modals, drawer, viewportViewer];
     },
 
     renderEditorRootBreadcrumbs(props) {
@@ -81,34 +80,10 @@ export function RenderingPlugin() {
     },
 
     renderModal(props) {
-      // const { controller, model } = props;
-      // const activeModalProps = controller.run('getActiveModalProps', props);
-      // if (activeModalProps) {
-      //   if (activeModalProps.name === 'edit-desc') {
-      //     const modalProps = { ...props, topicKey: model.focusKey };
-      //     return (
-      //       <ModalBody>
-      //         <ModalDescEditor>
-      //           {controller.run('renderTopicDescEditor', modalProps)}
-      //         </ModalDescEditor>
-      //       </ModalBody>
-      //     );
-      //   }
-      // }
       return null;
     },
 
     getActiveModalProps(props) {
-      // const { model } = props;
-      // if (model.focusKey && model.focusMode === FocusMode.EDITING_DESC)
-      //   return {
-      //     name: 'edit-desc',
-      //     title: 'Edit Notes',
-      //     style: {
-      //       width: '50%',
-      //       height: '600px'
-      //     }
-      //   };
       return null;
     },
 
@@ -159,16 +134,7 @@ export function RenderingPlugin() {
     },
 
     renderTopicBlock(props) {
-      const { controller, block, topicKey, model } = props;
-      const handleVisibleChange = visible => {
-        if (!visible) {
-          controller.run('operation', {
-            ...props,
-            opType: OpType.FOCUS_TOPIC,
-            focusMode: FocusMode.NORMAL
-          });
-        }
-      };
+      const { controller, block } = props;
       switch (block.type) {
         case BlockType.CONTENT:
           return controller.run('renderTopicBlockContent', props);
@@ -204,11 +170,15 @@ export function RenderingPlugin() {
 
     renderFocusItemHighlight(props) {
       const { saveRef } = props;
-      return <TopicHighlight ref={saveRef('focus-highlight')} {...props} />;
+      return (
+        <TopicHighlight ref={saveRef(RefKey.FOCUS_HIGHLIGHT_KEY)} {...props} />
+      );
     },
 
     renderRootWidgetOtherChildren(props) {
       const { controller } = props;
+      const zoomFactor = controller.run('getZoomFactor', props);
+      props = { ...props, zoomFactor };
       return (
         <>
           {controller.run('renderRootSubLinks', props)}
@@ -220,6 +190,10 @@ export function RenderingPlugin() {
 
     renderStyleEditor(props) {
       return <StyleEditor key="style-editor" {...props} />;
+    },
+
+    renderViewPortViewer(props) {
+      return <ViewPortViewer key="view-port-viewer" {...props} />;
     }
   };
 }

@@ -78,61 +78,94 @@ export class TopicContentWidget extends BaseWidget<Props, State> {
     // Optional method called once the context menu is closed.
   }
 
-  isDoubleClick: boolean;
+  handleTopicClickTimeout;
 
   onClick = ev => {
-    this.isDoubleClick = false;
+    // log('onClick');
     const props = this.props;
     const { controller } = props;
-    setTimeout(() => {
-      if (!this.isDoubleClick) {
-        controller.run('handleTopicClick', { ...props, ev });
-      }
-    });
+    //TODO bug [Violation] 'setTimeout' handler took 69ms
+    this.handleTopicClickTimeout = setTimeout(() => {
+      log('handleTopicClick');
+      //注意这里要传递this.props, 而不是props, 因为会先调用onClick, 再调用其他的topic-content-editor的onClickOutside
+      //其他组件的onClickOutside是个同步的函数,会设置新的model, 如果这里用props传参,会导致model 还是老的model
+      controller.run('handleTopicClick', { ...this.props, ev });
+    }, 200);
   };
 
   onDoubleClick = ev => {
-    this.isDoubleClick = true;
+    clearTimeout(this.handleTopicClickTimeout);
     const { controller } = this.props;
+    log('handleTopicDoubleClick');
     controller.run('handleTopicDoubleClick', { ...this.props, ev });
   };
 
   needRelocation: boolean = false;
-  oldCollapseIconRect: ClientRect;
+  oldCollapseIconVector;
 
   componentDidUpdate() {
     if (this.needRelocation) {
-      const { getRef, topicKey, setViewBoxScrollDelta } = this.props;
-      const newRect = getRef(collapseRefKey(topicKey)).getBoundingClientRect();
-      log('newRect:', newRect);
-      log('oldRect:', this.oldCollapseIconRect);
-      setViewBoxScrollDelta(
-        newRect.left - this.oldCollapseIconRect.left,
-        newRect.top - this.oldCollapseIconRect.top
-      );
+      const {
+        getRef,
+        topicKey,
+        setViewBoxScrollDelta,
+        controller
+      } = this.props;
+      const newIcon = getRef(collapseRefKey(topicKey));
+      const newRect = newIcon.getBoundingClientRect();
+      // const newVector = controller.run('getRelativeVectorFromViewPort', {
+      //   ...this.props,
+      //   element: getRef(collapseRefKey(topicKey))
+      // });
+      const newVector = [
+        newRect.left + newRect.width / 2,
+        newRect.top + newRect.height / 2
+      ];
+      const z = controller.run('getZoomFactor', {
+        ...this.props
+      });
+      log('newVector:', newVector);
+      log('oldVector:', this.oldCollapseIconVector);
+      //TODO bug
+      const vector = [
+        newVector[0] - this.oldCollapseIconVector[0],
+        newVector[1] - this.oldCollapseIconVector[1]
+      ];
+      // vector = [vector[0]*z,vector[1]*z]
+      log('vector', vector);
+      setViewBoxScrollDelta(vector[0], vector[1]);
       this.needRelocation = false;
     }
   }
 
   onClickCollapse = e => {
     e.stopPropagation();
-    const { topicKey, getRef } = this.props;
+    const { topicKey, getRef, controller } = this.props;
     this.needRelocation = true;
-    this.oldCollapseIconRect = getRef(
-      collapseRefKey(topicKey)
-    ).getBoundingClientRect();
+    const collapseIcon = getRef(collapseRefKey(topicKey));
+    const rect = collapseIcon.getBoundingClientRect();
+    log('oldRect', rect);
+    this.oldCollapseIconVector = [
+      rect.left + rect.width / 2,
+      rect.top + rect.height / 2
+    ];
+    log('oldCollapseIconVector', this.oldCollapseIconVector);
+    // this.oldCollapseIconVector = controller.run('getRelativeVectorFromViewPort', {
+    //   ...this.props,
+    //   element: collapseIcon
+    // });
     this.operation(OpType.TOGGLE_COLLAPSE, this.props);
   };
 
   render() {
     const props = this.props;
     const { saveRef, topicKey, model, controller, topicStyle, dir } = props;
+    log('render', topicKey, model.focusMode);
     const draggable = model.editingContentKey !== topicKey;
     const collapseIcon = controller.run('renderTopicCollapseIcon', {
       ...props,
       onClickCollapse: this.onClickCollapse.bind(this)
     });
-    // log(dir);
     const prevDropArea = controller.run('renderTopicDropArea', {
       ...props,
       dropDir: 'prev'
@@ -147,7 +180,7 @@ export class TopicContentWidget extends BaseWidget<Props, State> {
       onDragOver: this.onDragOver,
       onDrop: this.onDrop
     };
-    log(topicKey, 'style', topicStyle);
+    // log(topicKey, 'style', topicStyle);
     return (
       <TopicContentWithDropArea>
         {prevDropArea}

@@ -22,6 +22,31 @@ function toggleCollapse({ model, topicKey }: IModifierArg): IModifierResult {
   return model;
 }
 
+function collapseAll({ model }): IModifierResult {
+  log('collapseAll');
+  const topicKeys = getAllSubTopicKeys(model, model.editorRootTopicKey);
+  log(model);
+  model = model.withMutations(m => {
+    topicKeys.forEach(topicKey => {
+      m.setIn(['topics', topicKey, 'collapse'], true);
+    });
+  });
+  log(model);
+  return model;
+}
+
+function expandAll({ model }): IModifierResult {
+  const topicKeys = getAllSubTopicKeys(model, model.editorRootTopicKey);
+  log(model);
+  model = model.withMutations(m => {
+    topicKeys.forEach(topicKey => {
+      m.setIn(['topics', topicKey, 'collapse'], false);
+    });
+  });
+  log(model);
+  return model;
+}
+
 function setTopic({ model, topic }: IModifierArg): IModifierResult {
   model = model.setIn(['topics', topic.key], topic);
   return model;
@@ -105,6 +130,70 @@ function deleteTopic({ model, topicKey }: IModifierArg): IModifierResult {
   return model;
 }
 
+/**
+ * setBlockData of one topic
+ * @param model
+ * @param topicKey
+ * @param blockType
+ * @param focusMode
+ * @param data
+ */
+function setBlockData({
+  model,
+  topicKey,
+  blockType,
+  focusMode,
+  data
+}: IModifierArg): IModifierResult {
+  const topic = model.getTopic(topicKey);
+  if (topic) {
+    const { index, block } = topic.getBlock(blockType);
+    if (index === -1) {
+      model = model.updateIn(['topics', topicKey, 'blocks'], blocks =>
+        blocks.push(
+          Block.create({
+            type: blockType,
+            data: data
+          })
+        )
+      );
+    } else {
+      if (block.data !== data) {
+        model = model.updateIn(
+          ['topics', topicKey, 'blocks', index, 'data'],
+          dt => data
+        );
+      }
+    }
+    if (focusMode) {
+      model = focusTopic({
+        model,
+        topicKey,
+        focusMode
+      });
+    }
+  }
+  return model;
+}
+
+function deleteBlock({ model, topicKey, blockType }) {
+  const topic = model.getTopic(topicKey);
+  if (topic) {
+    const { index, block } = topic.getBlock(blockType);
+    if (index !== -1) {
+      model = model.updateIn(['topics', topicKey, 'blocks'], blocks =>
+        blocks.delete(index)
+      );
+    }
+    model = focusTopic({
+      model,
+      topicKey: null,
+      focusMode: null
+    });
+  }
+  return model;
+}
+
 function setContent({ model, topicKey, data }: IModifierArg): IModifierResult {
   const topic = model.getTopic(topicKey);
   if (topic) {
@@ -115,6 +204,7 @@ function setContent({ model, topicKey, data }: IModifierArg): IModifierResult {
         dt => data
       );
     }
+    //TODO 可以拆成两次
     return focusTopic({
       model,
       topicKey,
@@ -183,16 +273,27 @@ function setEditorRootTopicKey({ model, topicKey }): IModifierResult {
   return model;
 }
 
+function setZoomFactor({ model, zoomFactor }): IModifierResult {
+  if (model.editorRootTopicKey !== zoomFactor)
+    model = model.set('zoomFactor', zoomFactor);
+  return model;
+}
+
 export default {
   addChild,
   addSibling,
   toggleCollapse,
+  collapseAll,
+  expandAll,
   focusTopic,
   deleteTopic,
+  setBlockData,
+  deleteBlock,
   setContent,
   setDesc,
   setStyle,
   setTheme,
   setLayoutDir,
-  setEditorRootTopicKey
+  setEditorRootTopicKey,
+  setZoomFactor
 };

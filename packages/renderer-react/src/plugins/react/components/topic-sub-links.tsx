@@ -3,9 +3,17 @@ import * as React from 'react';
 import styled from 'styled-components';
 import { BaseWidget } from '../../../components/common';
 import { BaseProps } from '../../../components/common/base-props';
-import { centerPointX, centerPointY, centerY, Point } from '../../../utils';
+import {
+  centerPointX,
+  centerPointY,
+  centerY,
+  collapseRefKey,
+  contentRefKey, getRelativeRect,
+  linksSvgRefKey,
+  Point,
+  RefKey
+} from '../../../utils';
 
-import { collapseRefKey, contentRefKey, linksSvgRefKey } from '../../../utils';
 const TopicLinksSvg = styled.svg`
   width: 100%;
   height: 100%;
@@ -31,15 +39,19 @@ export class TopicSubLinks extends BaseWidget<Props, State> {
   layout() {
     const props = this.props;
     const { model, getRef, topicKey, dir, controller } = props;
+    const z = controller.run('getZoomFactor',props);
     const topic = model.getTopic(topicKey);
     const content = getRef(contentRefKey(topicKey));
-    const svgRect: ClientRect = getRef(
-      linksSvgRefKey(topicKey)
-    ).getBoundingClientRect();
-    const collapseRect: ClientRect = getRef(
-      collapseRefKey(topicKey)
-    ).getBoundingClientRect();
-    const contentRect = content.getBoundingClientRect();
+    const svg = getRef(linksSvgRefKey(topicKey));
+    const collapseIcon = getRef(collapseRefKey(topicKey));
+    const bigView = getRef(RefKey.DRAG_SCROLL_WIDGET_KEY).bigView;
+    const svgRect =  getRelativeRect(svg,bigView,z);
+    const collapseRect = getRelativeRect(collapseIcon,bigView,z);
+    const contentRect = getRelativeRect(content,bigView,z);
+    log(topicKey);
+    log('svgRect',svgRect);
+    log('collapseRect',collapseRect);
+    log('contentRect',contentRect);
     let p1: Point, p2: Point, p3: Point;
 
     if (dir === TopicDirection.RIGHT) {
@@ -69,8 +81,8 @@ export class TopicSubLinks extends BaseWidget<Props, State> {
         ...props,
         topicKey: key
       });
-
-      const rect = getRef(contentRefKey(key)).getBoundingClientRect();
+      const subContent = getRef(contentRefKey(key));
+      const rect = getRelativeRect(subContent,bigView,z);
 
       if (dir === TopicDirection.RIGHT) {
         p3 = {
@@ -85,6 +97,7 @@ export class TopicSubLinks extends BaseWidget<Props, State> {
         };
       }
       const { lineType } = linkStyle;
+
       if (lineType === 'curve') {
         curve = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} C ${p2.x} ${centerPointY(
           p2,
@@ -124,7 +137,8 @@ export class TopicSubLinks extends BaseWidget<Props, State> {
   }
 
   render() {
-    const { topicKey, saveRef } = this.props;
+    const { topicKey, saveRef, model } = this.props;
+    const style = { transform: `scale(${1 / model.zoomFactor})` };
     return (
       <TopicLinksSvg ref={saveRef(linksSvgRefKey(topicKey))}>
         <g>{this.state.curves}</g>

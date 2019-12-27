@@ -3,7 +3,13 @@ export const IconName = {
   SHOW_MENU: 'show-menu',
   CLOSE: 'close',
   COLOR_PICKER: 'color-picker',
-  NOTES: 'notes'
+  NOTES: 'notes',
+  PLUS: 'plus',
+  MINUS: 'minus',
+  COLLAPSE_ALL: 'collapse',
+  EXPAND_ALL: 'expand',
+  CENTER: 'center',
+  TRASH: 'trash'
 };
 
 export function iconClassName(name) {

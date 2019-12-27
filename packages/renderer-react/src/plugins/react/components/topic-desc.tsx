@@ -1,32 +1,18 @@
 import { BlockType, FocusMode, OpType } from '@blink-mind/core';
-import {
-  Classes,
-  Drawer,
-  Popover,
-  PopoverInteractionKind,
-  Tooltip
-} from '@blueprintjs/core';
+import { Classes, Popover, PopoverInteractionKind } from '@blueprintjs/core';
 import debug from 'debug';
 import * as React from 'react';
 import styled from 'styled-components';
+import { TopicBlockIcon } from '../../../components/common/styled';
 import {
   cancelEvent,
-  DIAGRAM_ROOT_KEY,
   Icon,
   iconClassName,
-  IconName
+  IconName,
+  RefKey
 } from '../../../utils';
 
 const log = debug('node:topic-desc');
-
-//TODO
-const DescIcon = styled.div``;
-
-const DescEditorWrapper = styled.div`
-  overflow: auto;
-  padding: 0px 0px 0px 20px;
-  background: #88888850;
-`;
 
 const TooltipContentWrapper = styled.div`
   overflow: auto;
@@ -44,27 +30,6 @@ export function TopicDesc(props) {
     });
   };
 
-  const onDescEditorClose = e => {
-    e.stopPropagation();
-    const key = `topic-desc-data-${topicKey}`;
-    const descData = controller.run('deleteTempValue', { key });
-    controller.run('operation', {
-      ...props,
-      opArray: [
-        {
-          opType: OpType.SET_TOPIC_DESC,
-          topicKey,
-          data: descData
-        },
-        {
-          opType: OpType.FOCUS_TOPIC,
-          topicKey,
-          focusMode: FocusMode.NORMAL
-        }
-      ]
-    });
-  };
-
   const desc = model.getTopic(topicKey).getBlock(BlockType.DESC);
   if (
     !isEditing &&
@@ -72,7 +37,7 @@ export function TopicDesc(props) {
   )
     return null;
   const descEditor = controller.run('renderTopicDescEditor', props);
-  const diagramRoot = getRef(DIAGRAM_ROOT_KEY);
+  const diagramRoot = getRef(RefKey.DIAGRAM_ROOT_KEY);
   const style = {
     maxWidth: '800px',
     maxHeight: '600px'
@@ -92,11 +57,11 @@ export function TopicDesc(props) {
     </TooltipContentWrapper>
   );
   const icon = (
-    <DescIcon
+    <TopicBlockIcon
       onClick={onClick}
       className={iconClassName(IconName.NOTES)}
       tabIndex={-1}
-    ></DescIcon>
+    />
   );
   const tooltipProps = {
     autoFocus: false,
@@ -107,20 +72,5 @@ export function TopicDesc(props) {
   };
 
   const descIcon = desc.block && <Popover {...tooltipProps}></Popover>;
-  return (
-    <>
-      {descIcon}
-      <Drawer
-        title="Edit Notes"
-        icon={Icon('note')}
-        isOpen={isEditing}
-        hasBackdrop
-        isCloseButtonShown={false}
-        onClose={onDescEditorClose}
-        size="70%"
-      >
-        <DescEditorWrapper>{descEditor}</DescEditorWrapper>
-      </Drawer>
-    </>
-  );
+  return descIcon;
 }

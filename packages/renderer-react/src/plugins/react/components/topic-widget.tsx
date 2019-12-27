@@ -54,9 +54,9 @@ interface Props extends BaseProps {
 export class TopicWidget extends React.Component<Props> {
   renderSubTopics() {
     const props = this.props;
-    const { controller, model, topicKey, dir, saveRef, getRef } = props;
+    const { controller, model, topicKey, dir } = props;
     const topics = model.getTopic(topicKey).subKeys.toArray();
-    const res = controller.run('createSubTopics', { props, topics });
+    const res = controller.run('createSubTopics', { ...props, topics });
     if (!res) return null;
     const { subTopics } = res;
     const subLinks = controller.run('renderSubLinks', props);
@@ -67,15 +67,16 @@ export class TopicWidget extends React.Component<Props> {
     );
   }
 
-  componentDidUpdate(): void {
-    this.layoutLinks();
-  }
-
-  componentDidMount(): void {
-    this.layoutLinks();
-  }
+  // componentDidUpdate(): void {
+  //   this.layoutLinks();
+  // }
+  //
+  // componentDidMount(): void {
+  //   this.layoutLinks();
+  // }
 
   layoutLinks() {
+    log('layoutLinks');
     const { getRef, topicKey } = this.props;
     const links: TopicSubLinks = getRef(linksRefKey(topicKey));
     links && links.layout();
